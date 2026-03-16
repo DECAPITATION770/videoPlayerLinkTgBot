@@ -7,10 +7,13 @@ import httpx
 from httpx import HTTPStatusError
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
+from telegram import Update
+from telegram.ext import Application
 
 from config import settings
 from database import init_db
 from storage import get_media, register_media_from_file, MIME_TO_EXT
+from bot import build_application
 
 # long_id: token_urlsafe(48) → буквы, цифры, -, _; длина ~64
 def _is_valid_long_id(long_id: str) -> bool:
@@ -22,7 +25,21 @@ def _is_valid_long_id(long_id: str) -> bool:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    yield
+    bot_app = build_application()
+    await bot_app.initialize()
+    await bot_app.start()
+    webhook_url = f"{settings.public_url_rstrip}/telegram-webhook"
+    await bot_app.bot.set_webhook(
+        url=webhook_url,
+        drop_pending_updates=True,
+    )
+    app.state.bot_app = bot_app
+    try:
+        yield
+    finally:
+        await bot_app.bot.delete_webhook(drop_pending_updates=True)
+        await bot_app.stop()
+        await bot_app.shutdown()
 
 
 app = FastAPI(title="TgPlayer", lifespan=lifespan)
@@ -32,6 +49,15 @@ app = FastAPI(title="TgPlayer", lifespan=lifespan)
 async def root():
     """Проверка доступности сервиса."""
     return {"status": "ok", "message": "TgPlayer работает"}
+
+
+@app.post("/telegram-webhook")
+async def telegram_webhook(request: Request):
+    bot_app: Application = request.app.state.bot_app
+    data = await request.json()
+    update = Update.de_json(data, bot_app.bot)
+    await bot_app.process_update(update)
+    return {"ok": True}
 
 
 @app.post("/api/register")

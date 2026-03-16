@@ -1,11 +1,11 @@
 import logging
-import httpx
 from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import Application, ContextTypes, MessageHandler, filters
 from telegram.error import TelegramError
 
 from config import settings
+from storage import register_media_from_file
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -102,17 +102,9 @@ async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             await update.message.reply_text("Что-то пошло не так. Попробуйте отправить ещё раз.")
         return
     try:
-        async with httpx.AsyncClient() as client:
-            r = await client.post(
-                f"{settings.app_url_rstrip}/api/register",
-                files={"file": ("media", file_bytes, mime_type or "application/octet-stream")},
-                data={"mime_type": mime_type, "media_type": media_type},
-                timeout=60.0,
-            )
-            r.raise_for_status()
-            data = r.json()
-            url = data.get("url", "")
-    except Exception as e:
+        long_id = await register_media_from_file(file_bytes, mime_type, media_type)
+        url = f"{settings.public_url_rstrip}/p/{long_id}"
+    except Exception:
         log.exception("Ошибка при регистрации")
         await update.message.reply_text("Не удалось создать ссылку. Попробуйте позже.")
         return
@@ -125,7 +117,7 @@ async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text("Не удалось получить ссылку.")
 
 
-def main() -> None:
+def build_application() -> Application:
     if not settings.telegram_bot_token:
         raise SystemExit("Задайте TELEGRAM_BOT_TOKEN в окружении")
     builder = (
@@ -145,6 +137,11 @@ def main() -> None:
             handle_media,
         )
     )
+    return app
+
+
+def main() -> None:
+    app = build_application()
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
