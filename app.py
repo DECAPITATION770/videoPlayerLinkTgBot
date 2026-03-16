@@ -51,13 +51,15 @@ async def root():
     return {"status": "ok", "message": "TgPlayer работает"}
 
 
-@app.post("/telegram-webhook")
-async def telegram_webhook(request: Request):
-    bot_app: Application = request.app.state.bot_app
-    data = await request.json()
-    update = Update.de_json(data, bot_app.bot)
-    await bot_app.process_update(update)
-    return {"ok": True}
+
+@app.post("/telegram-webhook") 
+async def telegram_webhook(request: Request): 
+    bot_app: Application = request.app.state.bot_app 
+    data = await request.json() 
+    update = Update.de_json(data, bot_app.bot) 
+    await bot_app.process_update(update) 
+    return {"ok": True} 
+
 
 
 @app.post("/api/register")
