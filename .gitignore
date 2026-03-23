@@ -1,8 +1,6 @@
 .venv/
+uploads/
+media_bot.session
 __pycache__/
-*.pyc
-.env
-media/
-*.db
-media/*
-.vscode/
+
+

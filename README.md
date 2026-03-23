@@ -1,70 +1,174 @@
-# TgPlayer
+# Telegram Media Bot 🎬
 
-Telegram-бот: отправьте фото, видео или GIF — получите ссылку на плеер. Один сервис: FastAPI + webhook.
+Простой бот для загрузки медиа-файлов любого размера (включая 200+ МБ) с веб-плеером.
 
-## Деплой
+## ✨ Возможности
 
-### 1. Docker (VPS, свой сервер)
+- ✅ Файлы **любого размера** (200 МБ, 500 МБ, 1 ГБ+)
+- ✅ Видео, фото, GIF, аудио, документы
+- ✅ HTTPS ссылки на все файлы
+- ✅ Адаптивный плеер для всех устройств
+- ✅ Превью с кнопкой Play посередине
+- ✅ Автоматический полноэкранный режим
+- ✅ Правильная ориентация экрана (горизонтальное видео → горизонтальный экран)
+- ✅ Без потери качества контента
+- ✅ **Один файл** - всё включено!
 
+## 📦 Установка
+
+1. Установите Python 3.8+ если еще не установлен
+
+2. Установите зависимости:
 ```bash
-cp .env.example .env
-# Заполните TELEGRAM_BOT_TOKEN и PUBLIC_URL (например https://your-domain.com)
-
-docker compose up -d
-```
-
-**Переменные:**
-- `TELEGRAM_BOT_TOKEN` — от [@BotFather](https://t.me/BotFather)
-- `PUBLIC_URL` — публичный URL приложения (без `/` в конце)
-- `TELEGRAM_API_ID` и `TELEGRAM_API_HASH` — для файлов >20 МБ, получить на [my.telegram.org](https://my.telegram.org)
-
-### 2. Railway
-
-1. Создайте проект → **Deploy from GitHub**
-2. В **Variables** добавьте:
-   - `TELEGRAM_BOT_TOKEN`
-   - `PUBLIC_URL` = `https://ВАШ-ПРОЕКТ.up.railway.app`
-3. В **Settings** → **Docker** включите Dockerfile (или Root Directory)
-4. Railway сам найдёт Dockerfile и соберёт образ
-
-### 3. Render
-
-1. **New** → **Web Service**, подключите репозиторий
-2. **Environment**: Docker
-3. В **Environment Variables**:
-   - `TELEGRAM_BOT_TOKEN`
-   - `PUBLIC_URL` = `https://ВАШ-СЕРВИС.onrender.com`
-4. Deploy
-
-### 4. Fly.io
-
-```bash
-fly launch
-# Укажите регион
-
-fly secrets set TELEGRAM_BOT_TOKEN=ваш_токен
-fly secrets set PUBLIC_URL=https://ВАШ-ПРОЕКТ.fly.dev
-
-fly deploy
-```
-
-### 5. Локально (разработка)
-
-```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-
-# .env: TELEGRAM_BOT_TOKEN, PUBLIC_URL=http://localhost:8000
-uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
-С телефона (та же Wi‑Fi): узнайте IP (`ifconfig | grep "inet "`), `PUBLIC_URL=http://192.168.x.x:8000`.
+## ⚙️ Настройка
 
-Из интернета: [ngrok](https://ngrok.com) → `ngrok http 8000` → `PUBLIC_URL=https://xxxx.ngrok-free.app`.
+Откройте файл `bot.py` и измените настройки в начале файла:
+
+```python
+# Получите от https://my.telegram.org/apps
+API_ID = 12345678  # Ваш API ID
+API_HASH = 'your_api_hash_here'  # Ваш API Hash
+BOT_TOKEN = 'your_bot_token_here'  # Токен от @BotFather
+
+# Настройки сервера
+DOMAIN = 'https://yourdomain.com'  # Ваш домен с HTTPS
+PORT = 8080  # Порт веб-сервера
+```
+
+### Как получить API_ID и API_HASH:
+
+1. Перейдите на https://my.telegram.org/apps
+2. Войдите с вашим номером телефона
+3. Создайте новое приложение (любое название)
+4. Скопируйте **API ID** и **API Hash**
+
+### Как получить BOT_TOKEN:
+
+1. Напишите [@BotFather](https://t.me/BotFather) в Telegram
+2. Отправьте команду `/newbot`
+3. Следуйте инструкциям (придумайте имя и username)
+4. Скопируйте токен
+
+## 🚀 Запуск
+
+```bash
+python bot.py
+```
+
+Или в фоне:
+```bash
+nohup python bot.py &
+```
+
+## 📖 Как использовать
+
+1. Отправьте боту любой медиа-файл
+2. Дождитесь загрузки
+3. Получите:
+   - **🎬 Плеер** - красивый веб-плеер с превью
+   - **🔗 Прямая ссылка** - прямая ссылка на файл
+
+## 🌐 Деплой на сервер
+
+### С Nginx (рекомендуется):
+
+1. Установите Nginx:
+```bash
+sudo apt update
+sudo apt install nginx
+```
+
+2. Настройте Nginx (`/etc/nginx/sites-available/mediabot`):
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        client_max_body_size 2000M;
+    }
+}
+```
+
+3. Включите сайт:
+```bash
+sudo ln -s /etc/nginx/sites-available/mediabot /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+4. Установите SSL (Let's Encrypt):
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com
+```
+
+### Автозапуск через systemd:
+
+Создайте файл `/etc/systemd/system/mediabot.service`:
+```ini
+[Unit]
+Description=Telegram Media Bot
+After=network.target
+
+[Service]
+Type=simple
+User=youruser
+WorkingDirectory=/path/to/bot
+ExecStart=/usr/bin/python3 /path/to/bot/bot.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Запустите:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable mediabot
+sudo systemctl start mediabot
+sudo systemctl status mediabot
+```
+
+## 🔧 Технологии
+
+- **Telethon** - MTProto клиент для Telegram
+- **aiohttp** - Асинхронный веб-сервер
+- Python 3.8+
+
+## 💡 Преимущества Telethon
+
+- ✅ Нет ограничений на размер файлов (Telegram API позволяет до 2 ГБ)
+- ✅ Быстрая загрузка больших файлов
+- ✅ Полный доступ к Telegram API
+- ✅ Асинхронная работа
+
+## 📝 Примечания
+
+- Бот автоматически создаст папку `uploads` для файлов
+- Файлы хранятся на вашем сервере
+- Рекомендуется настроить автоочистку старых файлов (cron)
+
+## 🔒 Безопасность
+
+- Используйте HTTPS (настройте SSL)
+- Не делитесь API_HASH и BOT_TOKEN
+- Настройте firewall на сервере
+- Ограничьте доступ к папке uploads
+
+## 📄 Лицензия
+
+MIT License - используйте свободно!
 
 ---
 
-## Файлы >20 МБ
-
-Docker-конфигурация включает локальный Bot API. В `.env` укажите `TELEGRAM_API_ID` и `TELEGRAM_API_HASH` с [my.telegram.org](https://my.telegram.org) → API development tools.
+**Сделано с ❤️ для работы с медиа в Telegram**
