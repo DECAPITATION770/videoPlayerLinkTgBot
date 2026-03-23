@@ -3,5 +3,7 @@ uploads/
 media_bot.session
 __pycache__/
 
-
-
+.env
+bot.log
+media_bot.db
+media_db.json
