@@ -186,7 +186,7 @@ class MediaDatabase:
 # ГЛОБАЛЬНЫЕ ОБЪЕКТЫ
 # ============================================================================
 
-bot = TelegramClient('media_bot', API_ID, API_HASH)
+bot = None  # Инициализируется в main() для Python 3.14 (требуется event loop)
 db  = MediaDatabase(DB_PATH)
 _message_queue: asyncio.Queue = None
 
@@ -1317,13 +1317,18 @@ async def main():
 
 
 if __name__ == '__main__':
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    globals()['bot'] = TelegramClient('media_bot', API_ID, API_HASH)
+
     def _shutdown(sig, frame):
-        asyncio.create_task(bot.disconnect())
+        if bot:
+            loop.create_task(bot.disconnect())
 
     signal.signal(signal.SIGTERM, _shutdown)
     signal.signal(signal.SIGINT,  _shutdown)
 
     try:
-        asyncio.run(main())
+        loop.run_until_complete(main())
     except KeyboardInterrupt:
         logger.info('Остановлено')
