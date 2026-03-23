@@ -6,7 +6,7 @@ import json
 import httpx
 from httpx import HTTPStatusError
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, StreamingResponse
 from telegram import Update
 from telegram.ext import Application
 
@@ -104,10 +104,7 @@ async def player_page(long_id: str):
 
     # Для картинок — сразу отдаём чистый файл/картинку
     if is_image and not is_video:
-        # frontend указывает напрямую на сырой файл
-        from fastapi.responses import RedirectResponse as _Redirect
-
-        return _Redirect(url=media_url, status_code=302)
+        return RedirectResponse(url=media_url, status_code=302)
 
     html = f"""<!DOCTYPE html>
 <html lang="ru">

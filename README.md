@@ -1,49 +1,70 @@
 # TgPlayer
 
-Отправьте боту в Telegram фото, видео или GIF — получите ссылку на плеер. Всё работает через один URL: плеер + webhook.
+Telegram-бот: отправьте фото, видео или GIF — получите ссылку на плеер. Один сервис: FastAPI + webhook.
 
-## Docker (рекомендуется)
+## Деплой
+
+### 1. Docker (VPS, свой сервер)
 
 ```bash
-# 1. Создайте .env
 cp .env.example .env
-# Заполните TELEGRAM_BOT_TOKEN
+# Заполните TELEGRAM_BOT_TOKEN и PUBLIC_URL (например https://your-domain.com)
 
-# 2. Запуск
 docker compose up -d
-
-# 3. Откройте http://localhost:8000 (на компьютере)
 ```
 
-**Важно:** `PUBLIC_URL` — единственный адрес, который используется и для ссылок, и для webhook.
+**Переменные:**
+- `TELEGRAM_BOT_TOKEN` — от [@BotFather](https://t.me/BotFather)
+- `PUBLIC_URL` — публичный URL приложения (без `/` в конце)
+- `TELEGRAM_API_ID` и `TELEGRAM_API_HASH` — для файлов >20 МБ, получить на [my.telegram.org](https://my.telegram.org)
 
-- **С компьютера:** `PUBLIC_URL=http://localhost:8000` — ссылки открываются в браузере на этом же ПК.
-- **С телефона (та же Wi‑Fi):** Узнайте IP (`ifconfig | grep "inet "`) и укажите `PUBLIC_URL=http://192.168.x.x:8000`.
-- **Из интернета:** [ngrok](https://ngrok.com): `ngrok http 8000`, затем `PUBLIC_URL=https://xxxx.ngrok-free.app`.
+### 2. Railway
 
-Переменные:
-- `TELEGRAM_BOT_TOKEN` — токен от [@BotFather](https://t.me/BotFather)
-- `PUBLIC_URL` — адрес, по которому доступно приложение (без слэша в конце). Используется и для webhook.
+1. Создайте проект → **Deploy from GitHub**
+2. В **Variables** добавьте:
+   - `TELEGRAM_BOT_TOKEN`
+   - `PUBLIC_URL` = `https://ВАШ-ПРОЕКТ.up.railway.app`
+3. В **Settings** → **Docker** включите Dockerfile (или Root Directory)
+4. Railway сам найдёт Dockerfile и соберёт образ
 
-## Локальный запуск
+### 3. Render
+
+1. **New** → **Web Service**, подключите репозиторий
+2. **Environment**: Docker
+3. В **Environment Variables**:
+   - `TELEGRAM_BOT_TOKEN`
+   - `PUBLIC_URL` = `https://ВАШ-СЕРВИС.onrender.com`
+4. Deploy
+
+### 4. Fly.io
+
+```bash
+fly launch
+# Укажите регион
+
+fly secrets set TELEGRAM_BOT_TOKEN=ваш_токен
+fly secrets set PUBLIC_URL=https://ВАШ-ПРОЕКТ.fly.dev
+
+fly deploy
+```
+
+### 5. Локально (разработка)
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# Терминал 1
+# .env: TELEGRAM_BOT_TOKEN, PUBLIC_URL=http://localhost:8000
 uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
+С телефона (та же Wi‑Fi): узнайте IP (`ifconfig | grep "inet "`), `PUBLIC_URL=http://192.168.x.x:8000`.
+
+Из интернета: [ngrok](https://ngrok.com) → `ngrok http 8000` → `PUBLIC_URL=https://xxxx.ngrok-free.app`.
+
+---
+
 ## Файлы >20 МБ
 
-По умолчанию работает стандартный лимит Telegram (20 МБ). Для больших файлов можно настроить локальный Bot API (опционально):
-
-```
-TELEGRAM_API_ID=12345678
-TELEGRAM_API_HASH=abcdef...
-TELEGRAM_BOT_API_URL=http://telegram-bot-api:8081
-```
-
-Перезапустите: `docker compose up -d --build`.
+Docker-конфигурация включает локальный Bot API. В `.env` укажите `TELEGRAM_API_ID` и `TELEGRAM_API_HASH` с [my.telegram.org](https://my.telegram.org) → API development tools.
